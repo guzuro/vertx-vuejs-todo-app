@@ -1,5 +1,7 @@
 package com.guzuro.Todo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guzuro.DaoFactory.PostgresDAOFactory;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Row;
@@ -13,14 +15,19 @@ public class PostgresTodoDaoImpl implements TodoDao {
     @Override
     public CopyOnWriteArrayList<Todo> getAllTodos(Vertx vertx) {
         SqlClient pgClient = PostgresDAOFactory.createConnection(vertx);
-
         pgClient
                 .query("SELECT * from todo_item")
                 .execute(ar -> {
                     if (ar.succeeded()) {
                         RowSet<Row> result = ar.result();
+                        ObjectMapper objectMapper = new ObjectMapper();
                         for (Row row : result) {
-                            System.out.println(row.toJson());
+                            try {
+                                Todo todo = objectMapper.readValue(row.toJson().toString(), Todo.class);
+                                System.out.println(todo);
+                            } catch (JsonProcessingException e) {
+                                e.printStackTrace();
+                            }
                         }
                     } else {
                         System.out.println("Failure: " + ar.cause().getMessage());
