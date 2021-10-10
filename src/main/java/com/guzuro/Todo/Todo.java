@@ -3,22 +3,28 @@ package com.guzuro.Todo;
 import com.guzuro.Status;
 
 public class Todo {
+
+    private Number id;
     private String title;
     private String description;
-    private Status status;
+    private Status statusId;
 
-    public Todo(String title, String description, Status priority) {
+    public Todo(){
+    }
+
+    public Todo(Number id, String title, String description, Status statusId) {
+        this.id = id;
         this.title = title;
         this.description = description;
-        this.status = status;
+        this.statusId = statusId;
     }
 
-    public Status getStatus() {
-        return status;
+    public Status getStatusId() {
+        return statusId;
     }
 
-    public void setPriority(Status status) {
-        this.status = status;
+    public void setStatusId(Status status) {
+        this.statusId = status;
     }
 
     public String getDescription() {
@@ -35,5 +41,13 @@ public class Todo {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Number getId() {
+        return id;
+    }
+
+    public void setId(Number id) {
+        this.id = id;
     }
 }
