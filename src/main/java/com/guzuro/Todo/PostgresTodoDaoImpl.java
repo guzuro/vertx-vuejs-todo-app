@@ -1,21 +1,27 @@
 package com.guzuro.Todo;
 
+import com.guzuro.DaoFactory.PostgresDAOFactory;
+import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlClient;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class TodoDaoImpl implements TodoDao {
+public class PostgresTodoDaoImpl implements TodoDao {
 
     @Override
-    public CopyOnWriteArrayList<Todo> getAllTodos(SqlClient client) {
-        client
-                .query("select * from todo_item")
+    public CopyOnWriteArrayList<Todo> getAllTodos(Vertx vertx) {
+        SqlClient pgClient = PostgresDAOFactory.createConnection(vertx);
+
+        pgClient
+                .query("SELECT * from todo_item")
                 .execute(ar -> {
                     if (ar.succeeded()) {
                         RowSet<Row> result = ar.result();
-                        System.out.println("Got " + result.size() + " rows ");
+                        for (Row row : result) {
+                            System.out.println(row.toJson());
+                        }
                     } else {
                         System.out.println("Failure: " + ar.cause().getMessage());
                     }
