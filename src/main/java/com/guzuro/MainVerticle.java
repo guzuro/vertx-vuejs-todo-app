@@ -21,7 +21,11 @@ public class MainVerticle extends AbstractVerticle {
 
         TodoDao todoDao = new PostgresTodoDaoImpl();
         router.get("/todos").handler(routingContext -> {
-            todoDAO.getAllTodos(vertx);
+            todoDAO.getAllTodos(vertx).onComplete(objectAsyncResult -> {
+                routingContext.response()
+                        .putHeader("content-type", "application/json; charset=UTF-8")
+                        .end(objectAsyncResult.result().toString());
+            });
         });
 
         server.requestHandler(router).listen(8080, httpServerAsyncResult -> {

@@ -1,9 +1,9 @@
 package com.guzuro.Todo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guzuro.DaoFactory.PostgresDAOFactory;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlClient;
@@ -13,27 +13,26 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class PostgresTodoDaoImpl implements TodoDao {
 
     @Override
-    public CopyOnWriteArrayList<Todo> getAllTodos(Vertx vertx) {
+    public Future<Object> getAllTodos(Vertx vertx) {
         SqlClient pgClient = PostgresDAOFactory.createConnection(vertx);
-        pgClient
-                .query("SELECT * from todo_item")
-                .execute(ar -> {
-                    if (ar.succeeded()) {
-                        RowSet<Row> result = ar.result();
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        for (Row row : result) {
-                            try {
-                                Todo todo = objectMapper.readValue(row.toJson().toString(), Todo.class);
-                                System.out.println(todo);
-                            } catch (JsonProcessingException e) {
-                                e.printStackTrace();
+        CopyOnWriteArrayList<JsonObject> todoList = new CopyOnWriteArrayList<JsonObject>();
+
+        return vertx.executeBlocking(promise -> {
+            pgClient
+                    .query("SELECT * from todo_item")
+                    .execute(ar -> {
+                        if (ar.succeeded()) {
+                            RowSet<Row> result = ar.result();
+                            for (Row row : result) {
+                                todoList.add(row.toJson());
+                                System.out.println(todoList);
                             }
+                            promise.complete(todoList);
+                        } else {
+                            System.out.println("Failure: " + ar.cause().getMessage());
                         }
-                    } else {
-                        System.out.println("Failure: " + ar.cause().getMessage());
-                    }
-                });
-        return null;
+                    });
+        });
     }
 
     @Override
