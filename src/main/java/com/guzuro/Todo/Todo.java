@@ -7,7 +7,6 @@ public class Todo {
     private Number id;
     private String title;
     private String description;
-    private Status statusId;
 
     public Todo(){
     }
@@ -16,15 +15,6 @@ public class Todo {
         this.id = id;
         this.title = title;
         this.description = description;
-        this.statusId = statusId;
-    }
-
-    public Status getStatusId() {
-        return statusId;
-    }
-
-    public void setStatusId(Status status) {
-        this.statusId = status;
     }
 
     public String getDescription() {
