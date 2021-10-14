@@ -1,12 +1,14 @@
 package com.guzuro.Todo;
 
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public interface TodoDao {
-    public Future<Object> getAllTodos(Vertx vertx);
+    CompletableFuture<CopyOnWriteArrayList<Todo>> getAllTodos(Vertx vertx);
 
-    public void updateTodo(Todo todo);
+    void updateTodo(Todo todo);
 
-    public void deleteTodo(Todo todo);
+    void deleteTodo(Todo todo);
 }
