@@ -1,5 +1,7 @@
 package com.guzuro.DaoFactory;
 
+import com.guzuro.Commentary.CommentaryDao;
+import com.guzuro.Commentary.PostgresCommentaryDAOImpl;
 import com.guzuro.Todo.PostgresTodoDaoImpl;
 import com.guzuro.Todo.TodoDao;
 import io.vertx.core.Vertx;
@@ -13,10 +15,10 @@ public class PostgresDAOFactory extends DAOFactory {
     public static SqlClient createConnection(Vertx vertx) {
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setPort(5432)
-                .setHost("********")
-                .setDatabase("*********")
-                .setUser("**********")
-                .setPassword("*************");
+                .setHost("*")
+                .setDatabase("*")
+                .setUser("*")
+                .setPassword("*");
 
         PoolOptions poolOptions = new PoolOptions()
                 .setMaxSize(5);
@@ -25,7 +27,11 @@ public class PostgresDAOFactory extends DAOFactory {
         return pgClient;
     }
 
-    public TodoDao getTodoDAO() {
-        return new PostgresTodoDaoImpl();
+    public TodoDao getTodoDAO(Vertx vertx) {
+        return new PostgresTodoDaoImpl(vertx);
+    }
+
+    public CommentaryDao getCommentaryDAO(Vertx vertx) {
+        return new PostgresCommentaryDAOImpl(vertx);
     }
 }
