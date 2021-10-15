@@ -14,10 +14,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PostgresCommentaryDAOImpl implements CommentaryDao {
 
-    @Override
-    public CompletableFuture<CopyOnWriteArrayList<Commentary>> getCommentariesByTodoId(Vertx vertx, Number todoId) {
-        SqlClient pgClient = PostgresDAOFactory.createConnection(vertx);
+    SqlClient pgClient;
 
+    public PostgresCommentaryDAOImpl(Vertx vertx) {
+        pgClient = PostgresDAOFactory.createConnection(vertx);
+    }
+
+    @Override
+    public CompletableFuture<CopyOnWriteArrayList<Commentary>> getCommentariesByTodoId(Number todoId) {
         CopyOnWriteArrayList<Commentary> commentaryList = new CopyOnWriteArrayList<>();
 
         CompletableFuture<CopyOnWriteArrayList<Commentary>> future = new CompletableFuture<>();
