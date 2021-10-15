@@ -1,17 +1,20 @@
 package com.guzuro;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.guzuro.Commentary.CommentaryDao;
 import com.guzuro.DaoFactory.DAOFactory;
-import com.guzuro.Todo.PostgresTodoDaoImpl;
+import com.guzuro.Todo.Todo;
 import com.guzuro.Todo.TodoDao;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
     final DAOFactory postgresFactory = DAOFactory.getDAOFactory(DAOFactory.POSTGRES);
-    final TodoDao todoDAO = postgresFactory.getTodoDAO();
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -19,13 +22,59 @@ public class MainVerticle extends AbstractVerticle {
 
         Router router = Router.router(vertx);
 
-        TodoDao todoDao = new PostgresTodoDaoImpl();
-        router.get("/todos").handler(routingContext -> {
-            todoDAO.getAllTodos(vertx).onComplete(objectAsyncResult -> {
+        final TodoDao todoDAO = postgresFactory.getTodoDAO(vertx);
+        final CommentaryDao commentaryDAO = postgresFactory.getCommentaryDAO(vertx);
+
+        router.get("/").handler(routingContext -> {
+            todoDAO.getAllTodos().thenAccept(todos -> {
+                String todosJsonString = null;
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    todosJsonString = objectMapper.writeValueAsString(todos);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
-                        .end(objectAsyncResult.result().toString());
+                        .end(todosJsonString);
             });
+        });
+
+        router.post("/").handler(BodyHandler.create()).handler(routingContext -> {
+            String todoTitle = routingContext.getBodyAsJson().getString("title");
+            String todoDescription = routingContext.getBodyAsJson().getString("description");
+
+            Todo requestTodo = new Todo(null, todoTitle, todoDescription);
+            todoDAO.createTodo(requestTodo).thenAccept(todos -> {
+                String todoJsonString = null;
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    todoJsonString = objectMapper.writeValueAsString(todos);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                routingContext.response()
+                        .putHeader("content-type", "application/json; charset=UTF-8")
+                        .end(todoJsonString);
+            });
+        });
+
+        router.post("/addcomentary").handler(BodyHandler.create()).handler(routingContext -> {
+            if (routingContext.getBodyAsJson().containsKey("todo_id")) {
+                Number todoId = Integer.parseInt(routingContext.getBodyAsJson().getString("todo_id"));
+                commentaryDAO.getCommentariesByTodoId(todoId).thenAccept(commentaries -> {
+                    String commentariesJson = null;
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    try {
+                        commentariesJson = objectMapper.writeValueAsString(commentaries);
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=UTF-8")
+                            .end(commentariesJson);
+                });
+            }
         });
 
         server.requestHandler(router).listen(8080, httpServerAsyncResult -> {
