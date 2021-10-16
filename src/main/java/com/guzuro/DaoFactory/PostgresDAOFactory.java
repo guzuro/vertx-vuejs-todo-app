@@ -23,8 +23,7 @@ public class PostgresDAOFactory extends DAOFactory {
         PoolOptions poolOptions = new PoolOptions()
                 .setMaxSize(5);
 
-        SqlClient pgClient = PgPool.client(vertx, connectOptions, poolOptions);
-        return pgClient;
+        return PgPool.client(vertx, connectOptions, poolOptions);
     }
 
     public TodoDao getTodoDAO(Vertx vertx) {
