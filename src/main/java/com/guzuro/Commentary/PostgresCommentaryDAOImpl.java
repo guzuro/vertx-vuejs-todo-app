@@ -22,31 +22,68 @@ public class PostgresCommentaryDAOImpl implements CommentaryDao {
 
     @Override
     public CompletableFuture<CopyOnWriteArrayList<Commentary>> getCommentariesByTodoId(Number todoId) {
-        CopyOnWriteArrayList<Commentary> commentaryList = new CopyOnWriteArrayList<>();
 
+        CopyOnWriteArrayList<Commentary> commentaryList = new CopyOnWriteArrayList<>();
         CompletableFuture<CopyOnWriteArrayList<Commentary>> future = new CompletableFuture<>();
 
         pgClient
-                .preparedQuery("SELECT id, text FROM commentary WHERE todo_id = $1")
+                .preparedQuery("SELECT id, text, todo_id FROM commentary WHERE todo_id=$1")
                 .execute(Tuple.of(todoId), ar -> {
-                    RowSet<Row> result = ar.result();
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    for (Row row : result) {
-                        try {
-                            Commentary commentary = objectMapper.readValue(row.toJson().toString(), Commentary.class);
-                            commentaryList.add(commentary);
-                        } catch (JsonProcessingException e) {
-                            e.getStackTrace();
+                    if (ar.succeeded()) {
+                        RowSet<Row> result = ar.result();
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        for (Row row : result) {
+                            try {
+                                Commentary commentary = objectMapper.readValue(row.toJson().toString(), Commentary.class);
+                                commentaryList.add(commentary);
+                            } catch (JsonProcessingException e) {
+                                future.completeExceptionally(e.getCause());
+                            }
                         }
+                        future.complete(commentaryList);
+                    } else {
+                        future.completeExceptionally(ar.cause());
                     }
-                    System.out.println(commentaryList);
-                    future.complete(commentaryList);
                 });
         return future;
     }
 
     @Override
-    public Boolean removeCommentaryById(Number id) {
-        return null;
+    public CompletableFuture<Commentary> addCommentary(Commentary commentary) {
+        CompletableFuture<Commentary> future = new CompletableFuture<>();
+
+        pgClient
+                .preparedQuery("INSERT INTO commentary(text, todo_id) VALUES($1, $2) returning id, text, todo_id")
+                .execute(Tuple.of(commentary.getText(), commentary.getTodo_id()), ar -> {
+                    if (ar.succeeded()) {
+                        Row result = ar.result().iterator().next();
+                        Commentary commentFromDb = null;
+                        try {
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            commentFromDb = objectMapper.readValue(result.toJson().toString(), Commentary.class);
+                            future.complete(commentFromDb);
+                        } catch (JsonProcessingException e) {
+                            e.getStackTrace();
+                        }
+                    } else {
+                        future.completeExceptionally(new Throwable(ar.cause()));
+                    }
+                });
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> removeCommentaryById(Number commentId) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        pgClient
+                .preparedQuery("DELETE FROM commentary WHERE id=$1")
+                .execute(Tuple.of(commentId), ar -> {
+                    if (ar.succeeded()) {
+                        future.complete(true);
+                    } else {
+                        future.completeExceptionally(ar.cause());
+                    }
+                });
+        return future;
     }
 }
