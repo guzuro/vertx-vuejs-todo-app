@@ -71,12 +71,43 @@ public class PostgresTodoDaoImpl implements TodoDao {
     }
 
     @Override
-    public void updateTodo(Todo todo) {
-
+    public CompletableFuture<Todo> updateTodo(Todo todo) {
+        CompletableFuture<Todo> future = new CompletableFuture<>();
+        pgClient
+                .preparedQuery("" +
+                 "UPDATE todo_item SET (title, description) = ($1, $2) " +
+                 "WHERE id = $3 " +
+                 "returning id, title, description"
+                 )
+                .execute(Tuple.of(todo.getTitle(), todo.getDescription(), todo.getId()), ar -> {
+                    if (ar.succeeded()) {
+                        Row result = ar.result().iterator().next();
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        try {
+                            Todo resultTodo = objectMapper.readValue(result.toJson().toString(), Todo.class);
+                            future.complete(resultTodo);
+                        } catch (JsonProcessingException e) {
+                            future.completeExceptionally(new Throwable(e.getCause()));
+                        }
+                    } else {
+                        future.completeExceptionally(new Throwable(ar.cause()));
+                    }
+                });
+        return future;
     }
 
     @Override
-    public void deleteTodo(Todo todo) {
-
+    public CompletableFuture<Boolean> deleteTodo(Number todoId) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        pgClient
+                .preparedQuery("DELETE FROM todo_item WHERE id=$1")
+                .execute(Tuple.of(todoId), ar -> {
+                    if (ar.succeeded()) {
+                       future.complete(true);
+                    } else {
+                        future.completeExceptionally(new Throwable(ar.cause()));
+                    }
+                });
+        return future;
     }
 }

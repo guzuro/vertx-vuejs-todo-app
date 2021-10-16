@@ -5,11 +5,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public interface TodoDao {
 
-    CompletableFuture<CopyOnWriteArrayList<Todo>> getAllTodos();
-
     CompletableFuture<Todo> createTodo(Todo todo);
 
-    void updateTodo(Todo todo);
+    CompletableFuture<CopyOnWriteArrayList<Todo>> getAllTodos();
 
-    void deleteTodo(Todo todo);
+    CompletableFuture<Todo> updateTodo(Todo todo);
+
+    CompletableFuture<Boolean> deleteTodo(Number todoId);
 }
