@@ -1,7 +1,5 @@
 package com.guzuro.Todo;
 
-import com.guzuro.Status;
-
 public class Todo {
 
     private Number id;

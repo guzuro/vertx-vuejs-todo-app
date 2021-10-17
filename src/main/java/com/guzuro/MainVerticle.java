@@ -16,9 +16,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class MainVerticle extends AbstractVerticle {
 
     final DAOFactory postgresFactory = DAOFactory.getDAOFactory(DAOFactory.POSTGRES);
@@ -32,21 +29,7 @@ public class MainVerticle extends AbstractVerticle {
         final TodoDao todoDAO = postgresFactory.getTodoDAO(vertx);
         final CommentaryDao commentaryDAO = postgresFactory.getCommentaryDAO(vertx);
 
-
-        Set<String> allowedHeaders = new HashSet<>();
-        allowedHeaders.add("x-requested-with");
-        allowedHeaders.add("Access-Control-Allow-Origin");
-
-        Set<HttpMethod> allowedMethods = new HashSet<>();
-        allowedMethods.add(HttpMethod.GET);
-        allowedMethods.add(HttpMethod.POST);
-        allowedMethods.add(HttpMethod.OPTIONS);
-        allowedMethods.add(HttpMethod.DELETE);
-        allowedMethods.add(HttpMethod.PUT);
-
-        router.route().handler(CorsHandler.create("*").allowedHeaders(allowedHeaders).allowedMethods(allowedMethods));
-
-
+        router.route().handler(CorsHandler.create(".*."));
 
         router.get("/").handler(routingContext -> {
             todoDAO.getAllTodos().thenAccept(resTodos -> {
@@ -60,12 +43,18 @@ public class MainVerticle extends AbstractVerticle {
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(todosJsonString);
+            }).exceptionally(throwable -> {
+                routingContext.response()
+                        .putHeader("content-type", "application/json")
+                        .end(throwable.getCause().getMessage());
+                return null;
             });
         });
 
         router.post("/").handler(BodyHandler.create()).handler(routingContext -> {
             String todoTitle = routingContext.getBodyAsJson().getString("title");
             String todoDescription = routingContext.getBodyAsJson().getString("description");
+
             Todo requestTodo = new Todo(null, todoTitle, todoDescription);
 
             todoDAO.createTodo(requestTodo).thenAccept(resTodo -> {
@@ -80,6 +69,11 @@ public class MainVerticle extends AbstractVerticle {
                         .putHeader("content-type", "application/json; charset=UTF-8")
                         .setStatusCode(201)
                         .end(todosJsonString);
+            }).exceptionally(throwable -> {
+                routingContext.response()
+                        .putHeader("content-type", "application/json")
+                        .end(throwable.getCause().getMessage());
+                return null;
             });
         });
 
@@ -101,17 +95,33 @@ public class MainVerticle extends AbstractVerticle {
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(todoJsonString);
+            }).exceptionally(throwable -> {
+                routingContext.response()
+                        .putHeader("content-type", "application/json")
+                        .end(throwable.getCause().getMessage());
+                return null;
             });
         });
 
         router.delete("/:id").handler(routingContext -> {
             Number todoId = Integer.parseInt(routingContext.pathParam("id"));
             todoDAO.deleteTodo(todoId).thenAccept(result -> {
-                JsonObject response = new JsonObject();
-                response.put("result", "ok");
+                if (result) {
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=UTF-8")
+                            .setStatusCode(200)
+                            .end();
+                } else {
+                    routingContext.response()
+                            .setStatusCode(404)
+                            .setStatusMessage("NOT FOUND")
+                            .end();
+                }
+            }).exceptionally(throwable -> {
                 routingContext.response()
-                        .putHeader("content-type", "application/json; charset=UTF-8")
-                        .end(response.toString());
+                        .putHeader("content-type", "application/json")
+                        .end(throwable.getCause().getMessage());
+                return null;
             });
         });
 
@@ -130,6 +140,11 @@ public class MainVerticle extends AbstractVerticle {
                     routingContext.response()
                             .putHeader("content-type", "application/json; charset=UTF-8")
                             .end(commentariesJson);
+                }).exceptionally(throwable -> {
+                    routingContext.response()
+                            .putHeader("content-type", "application/json")
+                            .end(throwable.getCause().getMessage());
+                    return null;
                 });
             }
         });
@@ -151,6 +166,11 @@ public class MainVerticle extends AbstractVerticle {
                     routingContext.response()
                             .putHeader("content-type", "application/json; charset=UTF-8")
                             .end(commentaryJson);
+                }).exceptionally(throwable -> {
+                    routingContext.response()
+                            .putHeader("content-type", "application/json")
+                            .end(throwable.getCause().getMessage());
+                    return null;
                 });
             }
         });
@@ -164,6 +184,11 @@ public class MainVerticle extends AbstractVerticle {
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(response.toString());
+            }).exceptionally(throwable -> {
+                routingContext.response()
+                        .putHeader("content-type", "application/json")
+                        .end(throwable.getCause().getMessage());
+                return null;
             });
         });
 

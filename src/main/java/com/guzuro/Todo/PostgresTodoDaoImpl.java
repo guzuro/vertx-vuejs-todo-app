@@ -103,7 +103,11 @@ public class PostgresTodoDaoImpl implements TodoDao {
                 .preparedQuery("DELETE FROM todo_item WHERE id=$1")
                 .execute(Tuple.of(todoId), ar -> {
                     if (ar.succeeded()) {
-                       future.complete(true);
+                        if (ar.result().rowCount() > 0) {
+                            future.complete(true);
+                        } else {
+                            future.complete(false);
+                        }
                     } else {
                         future.completeExceptionally(ar.cause());
                     }
