@@ -9,10 +9,15 @@ import com.guzuro.Todo.Todo;
 import com.guzuro.Todo.TodoDao;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -26,6 +31,22 @@ public class MainVerticle extends AbstractVerticle {
 
         final TodoDao todoDAO = postgresFactory.getTodoDAO(vertx);
         final CommentaryDao commentaryDAO = postgresFactory.getCommentaryDAO(vertx);
+
+
+        Set<String> allowedHeaders = new HashSet<>();
+        allowedHeaders.add("x-requested-with");
+        allowedHeaders.add("Access-Control-Allow-Origin");
+
+        Set<HttpMethod> allowedMethods = new HashSet<>();
+        allowedMethods.add(HttpMethod.GET);
+        allowedMethods.add(HttpMethod.POST);
+        allowedMethods.add(HttpMethod.OPTIONS);
+        allowedMethods.add(HttpMethod.DELETE);
+        allowedMethods.add(HttpMethod.PUT);
+
+        router.route().handler(CorsHandler.create("*").allowedHeaders(allowedHeaders).allowedMethods(allowedMethods));
+
+
 
         router.get("/").handler(routingContext -> {
             todoDAO.getAllTodos().thenAccept(resTodos -> {
