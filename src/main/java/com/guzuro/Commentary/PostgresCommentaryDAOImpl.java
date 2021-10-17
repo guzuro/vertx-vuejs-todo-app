@@ -63,10 +63,10 @@ public class PostgresCommentaryDAOImpl implements CommentaryDao {
                             commentFromDb = objectMapper.readValue(result.toJson().toString(), Commentary.class);
                             future.complete(commentFromDb);
                         } catch (JsonProcessingException e) {
-                            e.getStackTrace();
+                            future.completeExceptionally(e.getCause());
                         }
                     } else {
-                        future.completeExceptionally(new Throwable(ar.cause()));
+                        future.completeExceptionally(ar.cause());
                     }
                 });
         return future;

@@ -37,12 +37,12 @@ public class PostgresTodoDaoImpl implements TodoDao {
                                 Todo todo = objectMapper.readValue(row.toJson().toString(), Todo.class);
                                 todoList.add(todo);
                             } catch (JsonProcessingException e) {
-                                e.getStackTrace();
+                                future.completeExceptionally(e.getCause());
                             }
                         }
                         future.complete(todoList);
                     } else {
-                        future.completeExceptionally(new Throwable(ar.cause()));
+                        future.completeExceptionally(ar.cause());
                     }
                 });
         return future;
@@ -61,10 +61,10 @@ public class PostgresTodoDaoImpl implements TodoDao {
                             Todo resultTodo = objectMapper.readValue(result.toJson().toString(), Todo.class);
                             future.complete(resultTodo);
                         } catch (JsonProcessingException e) {
-                            future.completeExceptionally(new Throwable(e.getCause()));
+                            future.completeExceptionally(e.getCause());
                         }
                     } else {
-                        future.completeExceptionally(new Throwable(ar.cause()));
+                        future.completeExceptionally(ar.cause());
                     }
                 });
         return future;
@@ -87,10 +87,10 @@ public class PostgresTodoDaoImpl implements TodoDao {
                             Todo resultTodo = objectMapper.readValue(result.toJson().toString(), Todo.class);
                             future.complete(resultTodo);
                         } catch (JsonProcessingException e) {
-                            future.completeExceptionally(new Throwable(e.getCause()));
+                            future.completeExceptionally(e.getCause());
                         }
                     } else {
-                        future.completeExceptionally(new Throwable(ar.cause()));
+                        future.completeExceptionally(ar.cause());
                     }
                 });
         return future;
@@ -105,7 +105,7 @@ public class PostgresTodoDaoImpl implements TodoDao {
                     if (ar.succeeded()) {
                        future.complete(true);
                     } else {
-                        future.completeExceptionally(new Throwable(ar.cause()));
+                        future.completeExceptionally(ar.cause());
                     }
                 });
         return future;
