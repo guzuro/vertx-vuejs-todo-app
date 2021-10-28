@@ -1,7 +1,5 @@
 package com.guzuro;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guzuro.Commentary.Commentary;
 import com.guzuro.Commentary.CommentaryDao;
 import com.guzuro.DaoFactory.DAOFactory;
@@ -11,10 +9,17 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -29,23 +34,25 @@ public class MainVerticle extends AbstractVerticle {
         final TodoDao todoDAO = postgresFactory.getTodoDAO(vertx);
         final CommentaryDao commentaryDAO = postgresFactory.getCommentaryDAO(vertx);
 
-        router.route().handler(CorsHandler.create(".*."));
+        Set<HttpMethod> allowedMethods = new HashSet<>();
+        allowedMethods.add(HttpMethod.GET);
+        allowedMethods.add(HttpMethod.POST);
+        allowedMethods.add(HttpMethod.OPTIONS);
+        allowedMethods.add(HttpMethod.DELETE);
+        allowedMethods.add(HttpMethod.PUT);
+
+        router.route().handler(CorsHandler.create(".*.").allowedMethods(allowedMethods));
 
         router.get("/").handler(routingContext -> {
             todoDAO.getAllTodos().thenAccept(resTodos -> {
-                String todosJsonString = null;
-                ObjectMapper objectMapper = new ObjectMapper();
-                try {
-                    todosJsonString = objectMapper.writeValueAsString(resTodos);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
+                JsonArray todosJson = new JsonArray();
+                resTodos.forEach(todosJson::add);
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
-                        .end(todosJsonString);
+                        .end(todosJson.encodePrettily());
             }).exceptionally(throwable -> {
                 routingContext.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(throwable.getCause().getMessage());
                 return null;
             });
@@ -58,20 +65,13 @@ public class MainVerticle extends AbstractVerticle {
             Todo requestTodo = new Todo(null, todoTitle, todoDescription);
 
             todoDAO.createTodo(requestTodo).thenAccept(resTodo -> {
-                String todosJsonString = null;
-                ObjectMapper objectMapper = new ObjectMapper();
-                try {
-                    todosJsonString = objectMapper.writeValueAsString(resTodo);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
                         .setStatusCode(201)
-                        .end(todosJsonString);
+                        .end(JsonObject.mapFrom(resTodo).encodePrettily());
             }).exceptionally(throwable -> {
                 routingContext.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(throwable.getCause().getMessage());
                 return null;
             });
@@ -85,19 +85,12 @@ public class MainVerticle extends AbstractVerticle {
             Todo todoToUpdate = new Todo(todoId, todoTitle, todoDescription);
 
             todoDAO.updateTodo(todoToUpdate).thenAccept(resTodo -> {
-                String todoJsonString = null;
-                ObjectMapper objectMapper = new ObjectMapper();
-                try {
-                    todoJsonString = objectMapper.writeValueAsString(resTodo);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=UTF-8")
-                        .end(todoJsonString);
+                        .end(JsonObject.mapFrom(resTodo).encodePrettily());
             }).exceptionally(throwable -> {
                 routingContext.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(throwable.getCause().getMessage());
                 return null;
             });
@@ -119,7 +112,7 @@ public class MainVerticle extends AbstractVerticle {
                 }
             }).exceptionally(throwable -> {
                 routingContext.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(throwable.getCause().getMessage());
                 return null;
             });
@@ -130,19 +123,14 @@ public class MainVerticle extends AbstractVerticle {
                 Number todoId = Integer.parseInt(routingContext.getBodyAsJson().getString("todo_id"));
 
                 commentaryDAO.getCommentariesByTodoId(todoId).thenAccept(resComment -> {
-                    String commentariesJson = null;
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    try {
-                        commentariesJson = objectMapper.writeValueAsString(resComment);
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
+                    JsonArray commentariesJson = new JsonArray();
+                    resComment.forEach(commentariesJson::add);
                     routingContext.response()
                             .putHeader("content-type", "application/json; charset=UTF-8")
-                            .end(commentariesJson);
+                            .end(commentariesJson.encodePrettily());
                 }).exceptionally(throwable -> {
                     routingContext.response()
-                            .putHeader("content-type", "application/json")
+                            .putHeader("content-type", "application/json; charset=UTF-8")
                             .end(throwable.getCause().getMessage());
                     return null;
                 });
@@ -154,21 +142,17 @@ public class MainVerticle extends AbstractVerticle {
                 String commentaryText = routingContext.getBodyAsJson().getString("text");
                 Number todoId = Integer.parseInt(routingContext.getBodyAsJson().getString("todo_id"));
 
-                Commentary commentary = new Commentary(null, commentaryText, todoId);
+                String createdAtString = routingContext.getBodyAsJson().getString("created_at");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+                LocalDateTime created_at = LocalDateTime.parse(createdAtString, formatter);
+                Commentary commentary = new Commentary(null, commentaryText, todoId, created_at);
                 commentaryDAO.addCommentary(commentary).thenAccept(resComment -> {
-                    String commentaryJson = null;
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    try {
-                        commentaryJson = objectMapper.writeValueAsString(resComment);
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
                     routingContext.response()
                             .putHeader("content-type", "application/json; charset=UTF-8")
-                            .end(commentaryJson);
+                            .end(JsonObject.mapFrom(resComment).encodePrettily());
                 }).exceptionally(throwable -> {
                     routingContext.response()
-                            .putHeader("content-type", "application/json")
+                            .putHeader("content-type", "application/json; charset=UTF-8")
                             .end(throwable.getCause().getMessage());
                     return null;
                 });
@@ -176,22 +160,27 @@ public class MainVerticle extends AbstractVerticle {
         });
 
         router.delete("/commentary/:id").handler(routingContext -> {
-            Number commenId = Integer.parseInt(routingContext.pathParam("id"));
+            Number commentId = Integer.parseInt(routingContext.pathParam("id"));
+            commentaryDAO.removeCommentaryById(commentId).thenAccept(result -> {
 
-            commentaryDAO.removeCommentaryById(commenId).thenAccept(result -> {
-                JsonObject response = new JsonObject();
-                response.put("result", "ok");
-                routingContext.response()
-                        .putHeader("content-type", "application/json; charset=UTF-8")
-                        .end(response.toString());
+                if (result) {
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=UTF-8")
+                            .setStatusCode(200)
+                            .end();
+                } else {
+                    routingContext.response()
+                            .setStatusCode(404)
+                            .setStatusMessage("NOT FOUND")
+                            .end();
+                }
             }).exceptionally(throwable -> {
                 routingContext.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader("content-type", "application/json; charset=UTF-8")
                         .end(throwable.getCause().getMessage());
                 return null;
             });
         });
-
 
         server.requestHandler(router).listen(8080, httpServerAsyncResult -> {
             if (httpServerAsyncResult.succeeded()) {
