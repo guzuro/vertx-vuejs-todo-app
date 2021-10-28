@@ -1,9 +1,8 @@
 package com.guzuro.Todo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guzuro.DaoFactory.PostgresDAOFactory;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlClient;
@@ -31,14 +30,8 @@ public class PostgresTodoDaoImpl implements TodoDao {
                 .execute(ar -> {
                     if (ar.succeeded()) {
                         RowSet<Row> result = ar.result();
-                        ObjectMapper objectMapper = new ObjectMapper();
                         for (Row row : result) {
-                            try {
-                                Todo todo = objectMapper.readValue(row.toJson().toString(), Todo.class);
-                                todoList.add(todo);
-                            } catch (JsonProcessingException e) {
-                                future.completeExceptionally(e.getCause());
-                            }
+                            todoList.add(JsonObject.mapFrom(row.toJson()).mapTo(Todo.class));
                         }
                         future.complete(todoList);
                     } else {
@@ -56,13 +49,8 @@ public class PostgresTodoDaoImpl implements TodoDao {
                 .execute(Tuple.of(todo.getTitle(), todo.getDescription()), ar -> {
                     if (ar.succeeded()) {
                         Row result = ar.result().iterator().next();
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        try {
-                            Todo resultTodo = objectMapper.readValue(result.toJson().toString(), Todo.class);
-                            future.complete(resultTodo);
-                        } catch (JsonProcessingException e) {
-                            future.completeExceptionally(e.getCause());
-                        }
+                        Todo resultTodo = JsonObject.mapFrom(result.toJson()).mapTo(Todo.class);
+                        future.complete(resultTodo);
                     } else {
                         future.completeExceptionally(ar.cause());
                     }
@@ -75,20 +63,15 @@ public class PostgresTodoDaoImpl implements TodoDao {
         CompletableFuture<Todo> future = new CompletableFuture<>();
         pgClient
                 .preparedQuery("" +
-                 "UPDATE todo_item SET (title, description) = ($1, $2) " +
-                 "WHERE id = $3 " +
-                 "returning id, title, description"
-                 )
+                        "UPDATE todo_item SET (title, description) = ($1, $2) " +
+                        "WHERE id = $3 " +
+                        "returning id, title, description"
+                )
                 .execute(Tuple.of(todo.getTitle(), todo.getDescription(), todo.getId()), ar -> {
                     if (ar.succeeded()) {
                         Row result = ar.result().iterator().next();
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        try {
-                            Todo resultTodo = objectMapper.readValue(result.toJson().toString(), Todo.class);
-                            future.complete(resultTodo);
-                        } catch (JsonProcessingException e) {
-                            future.completeExceptionally(e.getCause());
-                        }
+                        Todo resultTodo = JsonObject.mapFrom(result.toJson()).mapTo(Todo.class);
+                        future.complete(resultTodo);
                     } else {
                         future.completeExceptionally(ar.cause());
                     }
@@ -103,11 +86,7 @@ public class PostgresTodoDaoImpl implements TodoDao {
                 .preparedQuery("DELETE FROM todo_item WHERE id=$1")
                 .execute(Tuple.of(todoId), ar -> {
                     if (ar.succeeded()) {
-                        if (ar.result().rowCount() > 0) {
-                            future.complete(true);
-                        } else {
-                            future.complete(false);
-                        }
+                        future.complete(ar.result().rowCount() > 0);
                     } else {
                         future.completeExceptionally(ar.cause());
                     }
