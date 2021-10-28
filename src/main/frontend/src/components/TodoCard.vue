@@ -5,7 +5,7 @@
     </div>
     <div
       class="card__edit-btn"
-      @click="handleEditBtnClick"
+      @click="$emit('openEditTodoModal', todo)"
     >
       <b-icon icon="pencil" size="is-small" type="is-warning"> </b-icon>
     </div>
@@ -19,19 +19,14 @@
 </template>
 
 <script lang="ts">
-/* eslint-disable */
-import { ITodo } from "@/types/Todo";
-import Vue from "vue";
-import Component from "vue-class-component";
-import { Prop } from "vue-property-decorator";
+import { ITodo } from '@/types/Todo'
+import Vue from 'vue'
+import Component from 'vue-class-component'
+import { Prop } from 'vue-property-decorator'
 
 @Component
 export default class TodoCard extends Vue {
   @Prop() todo!: ITodo;
-
-  handleEditBtnClick():void {
-    alert('это появится немного позже...')
-  }
 }
 </script>
 
