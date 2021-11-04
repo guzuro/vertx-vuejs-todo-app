@@ -2,6 +2,7 @@ package com.guzuro.Commentary;
 
 import com.guzuro.DaoFactory.PostgresDAOFactory;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlClient;
@@ -32,16 +33,16 @@ public class PostgresCommentaryDAOImpl implements CommentaryDao {
                     if (ar.succeeded()) {
                         RowSet<Row> result = ar.result();
                         for (Row row : result) {
-                            String time = row.toJson().getString("created_at");
-                            LocalDateTime created_at = null;
-                            if (time != null) {
-                                DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-                                created_at = LocalDateTime.parse(time, formatter);
-                            }
-                            Number id = row.toJson().getNumber("id");
-                            Number todo_id = row.toJson().getNumber("todo_id");
-                            String text = row.toJson().getString("text");
-                            commentaryList.add(new Commentary(id, text, todo_id, created_at));
+//                            String time = row.toJson().getString("created_at");
+//                            LocalDateTime created_at = null;
+//                            if (time != null) {
+//                                DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+//                                created_at = LocalDateTime.parse(time, formatter);
+//                            }
+//                            long id = row.toJson().getLong("id");
+//                            long todo_id = row.toJson().getLong("todo_id");
+//                            String text = row.toJson().getString("text");
+                            commentaryList.add(JsonObject.mapFrom(row.toJson()).mapTo(Commentary.class));
                         }
                         future.complete(commentaryList);
                     } else {
@@ -61,15 +62,15 @@ public class PostgresCommentaryDAOImpl implements CommentaryDao {
                     if (ar.succeeded()) {
                         Row result = ar.result().iterator().next();
 
-                        String time = result.toJson().getString("created_at");
-                        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+//                        String time = result.toJson().getString("created_at");
+//                        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+//
+//                        LocalDateTime created_at = LocalDateTime.parse(time, formatter);
+//                        long id = result.toJson().getLong("id");
+//                        long todo_id = result.toJson().getLong("todo_id");
+//                        String text = result.toJson().getString("text");
 
-                        LocalDateTime created_at = LocalDateTime.parse(time, formatter);
-                        Number id = result.toJson().getNumber("id");
-                        Number todo_id = result.toJson().getNumber("todo_id");
-                        String text = result.toJson().getString("text");
-
-                        future.complete(new Commentary(id, text, todo_id, created_at));
+                        future.complete(JsonObject.mapFrom(result.toJson()).mapTo(Commentary.class));
                     } else {
                         future.completeExceptionally(ar.cause());
                     }

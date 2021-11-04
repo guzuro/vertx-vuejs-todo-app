@@ -124,7 +124,7 @@ public class MainVerticle extends AbstractVerticle {
 
                 commentaryDAO.getCommentariesByTodoId(todoId).thenAccept(resComment -> {
                     JsonArray commentariesJson = new JsonArray();
-                    resComment.forEach(commentariesJson::add);
+                    resComment.forEach(commentary -> commentariesJson.add(JsonObject.mapFrom(commentary)));
                     routingContext.response()
                             .putHeader("content-type", "application/json; charset=UTF-8")
                             .end(commentariesJson.encodePrettily());
@@ -139,14 +139,7 @@ public class MainVerticle extends AbstractVerticle {
 
         router.post("/addcommentary").handler(BodyHandler.create()).handler(routingContext -> {
             if (routingContext.getBodyAsJson().containsKey("text") && routingContext.getBodyAsJson().containsKey("todo_id")) {
-                String commentaryText = routingContext.getBodyAsJson().getString("text");
-                Number todoId = Integer.parseInt(routingContext.getBodyAsJson().getString("todo_id"));
-
-                String createdAtString = routingContext.getBodyAsJson().getString("created_at");
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
-                LocalDateTime created_at = LocalDateTime.parse(createdAtString, formatter);
-                Commentary commentary = new Commentary(null, commentaryText, todoId, created_at);
-                commentaryDAO.addCommentary(commentary).thenAccept(resComment -> {
+                commentaryDAO.addCommentary(JsonObject.mapFrom(routingContext.getBodyAsJson()).mapTo(Commentary.class)).thenAccept(resComment -> {
                     routingContext.response()
                             .putHeader("content-type", "application/json; charset=UTF-8")
                             .end(JsonObject.mapFrom(resComment).encodePrettily());
