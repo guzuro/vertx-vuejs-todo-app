@@ -6,7 +6,7 @@
           <b-button
             class="is-primary"
             @click="
-              (isComponentModalActive = !isComponentModalActive),
+              (isModalActive = !isModalActive),
                 (formType = 'create')
             "
           >
