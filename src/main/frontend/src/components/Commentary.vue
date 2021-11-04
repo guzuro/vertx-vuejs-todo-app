@@ -56,7 +56,7 @@ export default class Commentary extends Vue {
       const response = await Api.loadComments(selectedTodoId)
       const commentaries = response.map((c:any) => {
         if (c.created_at) {
-          c.created_at = moment(new Date(c.created_at.year, c.created_at.monthValue, c.created_at.dayOfMonth, c.created_at.hour, c.created_at.minute, c.created_at.second)).format('LLL')
+          c.created_at = moment(c.created_at.split('T').join(', ')).format('LLL')
         }
         return c
       })
@@ -72,18 +72,16 @@ export default class Commentary extends Vue {
 
   async addCommentary (): Promise<void> {
     const loader = this.$buefy.loading.open({})
-    const date = new Date()
-    const currentDate = date.toLocaleDateString()
-    const currentTime = date.toLocaleTimeString()
+    const date = moment().format('YYYY-MM-DDTHH:mm:ss')
 
     const commentary: ICommentary = {
       text: this.commentary,
       todo_id: this.selectedTodoId,
-      created_at: `${currentDate} ${currentTime}`
+      created_at: date
     }
     try {
       await Api.addCommentary(commentary)
-      this.loadComments(commentary.todo_id)
+      await this.loadComments(commentary.todo_id)
       successNotification('Комментарий добавлен')
     } catch (error: any) {
       errorNotification(error)
